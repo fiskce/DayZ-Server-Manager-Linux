@@ -6,7 +6,7 @@
 ###     DayZ Standalone Linux Server Manager                                              ###
 ###                                                                                       ###
 ###     Original script by thelastnoc                                                     ###
-###     Modified by haywardgg                     									      ###                  
+###     Modified by haywardgg                                                             ###                  
 ###=======================================================================================###
 
 ### NO NEED TO EDIT ANYTHING IN THIS FILE ###
