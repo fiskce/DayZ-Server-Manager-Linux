@@ -1,5 +1,5 @@
-[1] Attention! make sure your steam account you are using owns the game or else the mod installation part will fail.
-[2] Attention! in some cases the steamcmd wont install the mpmission scripts. if this happens create the "mpmissions" folder and download the mission scripts from [DayZ Central Economy](https://github.com/BohemiaInteractive/DayZ-Central-Economy)
+1. Attention! make sure your steam account you are using owns the game or else the mod installation part will fail.
+2. Attention! in some cases the steamcmd wont install the mpmission scripts. if this happens create the "mpmissions" folder and download the mission scripts from [DayZ Central Economy](https://github.com/BohemiaInteractive/DayZ-Central-Economy)
 
 # DayZ Server Manager for Linux Server Instances
 
