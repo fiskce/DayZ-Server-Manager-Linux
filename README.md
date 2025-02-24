@@ -1,6 +1,6 @@
 # DayZ Server Manager for Linux Server Instances
 
-![](https://edge-prodberiffagroup.b-cdn.net/web/dayzservermanagerheadlinegifsmall.gif)
+![](https://edge-prodberiffagroup.b-cdn.net/web/dayzservermanagerheadlinegifsmall-revisedyellow.gif)
 
 DayZ Server Manager for Linux is a comprehensive and user-friendly script designed to automate server installation, updates, backups, and monitoring. It simplifies the management process, ensuring a seamless and efficient server experience. With automated restarts, mod management, and easy setup, it is a valuable tool for any DayZ server administrator. Try it today and enhance your server operations effortlessly!
 
