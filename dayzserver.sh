@@ -2,11 +2,11 @@
 
 ###=======================================================================================###
 ###     Author:  @fiskce / @Tootlejack	                            Date: 28/11/2024      ###
+###              @thelastnoc / @haywardgg                                                 ###
 ###=======================================================================================###
-###     DayZ Standalone Linux Server Manager                                              ###
 ###                                                                                       ###
-###     Original script by thelastnoc                                                     ###
-###     Modified by haywardgg                                                             ###                  
+###                          DayZ Standalone Linux Server Manager                         ###
+###                                                                                       ###                                                                       
 ###=======================================================================================###
 
 ### NO NEED TO EDIT ANYTHING IN THIS FILE ###
