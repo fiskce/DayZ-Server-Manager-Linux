@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DayZ Server Manager</title>
+<style>
+/* Everything is inline: the page is served by a stdlib HTTP server with a
+   strict CSP and must not reach out to any CDN. */
+:root {
+  --bg: #14161a;
+  --panel: #1b1e24;
+  --panel-2: #22262e;
+  --border: #2e333d;
+  --text: #dfe3ea;
+  --muted: #8b93a1;
+  --accent: #c8a951;
+  --green: #4caf6d;
+  --red: #d9534f;
+  --amber: #d9a441;
+  --blue: #5b9bd5;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+button { font: inherit; cursor: pointer; }
+input, textarea, select { font: inherit; }
+a { color: var(--blue); }
+
+/* --- login ------------------------------------------------------------ */
+#login {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+#login .card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 32px;
+  width: 100%; max-width: 380px;
+}
+#login h1 { margin: 0 0 4px; font-size: 20px; }
+#login p.sub { margin: 0 0 24px; color: var(--muted); font-size: 13px; }
+#login input {
+  width: 100%; padding: 10px 12px; margin-bottom: 12px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+}
+#login button {
+  width: 100%; padding: 10px;
+  background: var(--accent); color: #14161a; font-weight: 600;
+  border: none; border-radius: 6px;
+}
+
+/* --- layout ----------------------------------------------------------- */
+header {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 14px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+header h1 { margin: 0; font-size: 17px; letter-spacing: .3px; }
+header h1 span { color: var(--accent); }
+header .spacer { flex: 1; }
+.pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 12px; border-radius: 999px;
+  background: var(--panel-2); border: 1px solid var(--border);
+  font-size: 13px;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.dot.off { background: var(--red); }
+
+nav {
+  display: flex; gap: 2px; padding: 0 12px; flex-wrap: wrap;
+  background: var(--panel); border-bottom: 1px solid var(--border);
+}
+nav button {
+  padding: 11px 16px; background: none; border: none;
+  color: var(--muted); border-bottom: 2px solid transparent;
+}
+nav button:hover { color: var(--text); }
+nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+main { padding: 20px; max-width: 1180px; margin: 0 auto; }
+.tab { display: none; }
+.tab.active { display: block; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+.panel h2 { margin: 0 0 14px; font-size: 14px; text-transform: uppercase;
+            letter-spacing: .6px; color: var(--muted); font-weight: 600; }
+
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.stat { background: var(--panel-2); border: 1px solid var(--border);
+        border-radius: 6px; padding: 12px 14px; }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.stat .value { font-size: 20px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  padding: 9px 16px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--green); border-color: var(--green); color: #10130f; font-weight: 600; }
+.btn.danger  { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+
+pre.console {
+  background: #0e1013; border: 1px solid var(--border); border-radius: 6px;
+  padding: 14px; margin: 0;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+  height: 460px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+}
+textarea.editor {
+  width: 100%; height: 440px; padding: 12px;
+  background: #0e1013; color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+  resize: vertical;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+td.mono { font-family: var(--mono); font-size: 13px; }
+
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11.5px; }
+.tag.ok   { background: rgba(76,175,109,.16); color: var(--green); }
+.tag.bad  { background: rgba(217,83,79,.16);  color: var(--red); }
+.tag.warn { background: rgba(217,164,65,.16); color: var(--amber); }
+
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.row input, .row select {
+  flex: 1; min-width: 180px; padding: 9px 11px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+}
+
+#toast {
+  position: fixed; right: 18px; bottom: 18px; z-index: 50;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  padding: 11px 16px; border-radius: 6px; max-width: 400px;
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  box-shadow: 0 6px 20px rgba(0,0,0,.4); font-size: 14px;
+}
+.toast.ok  { border-left-color: var(--green); }
+.toast.err { border-left-color: var(--red); }
+
+.hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+.warn-banner {
+  background: rgba(217,164,65,.1); border: 1px solid rgba(217,164,65,.35);
+  border-radius: 6px; padding: 10px 14px; margin-bottom: 16px;
+  color: var(--amber); font-size: 13.5px;
+}
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <form class="card" id="loginForm">
+    <h1>DayZ Server Manager</h1>
+    <p class="sub">Sign in to manage your server.</p>
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit">Sign in</button>
+    <p class="hint" id="loginError"></p>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <h1>DayZ <span>Server Manager</span></h1>
+    <div class="pill"><span class="dot" id="statusDot"></span><span id="statusText">checking…</span></div>
+    <div class="pill" id="playerPill" style="display:none">
+      <span id="playerText">0 players</span>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn small" id="logoutBtn">Sign out</button>
+  </header>
+
+  <nav>
+    <button class="active" data-tab="dashboard">Dashboard</button>
+    <button data-tab="console">Console</button>
+    <button data-tab="mods">Mods</button>
+    <button data-tab="config">Config</button>
+    <button data-tab="logs">Logs</button>
+    <button data-tab="backups">Backups</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+
+  <main>
+    <!-- Dashboard -->
+    <section class="tab active" id="tab-dashboard">
+      <div class="panel">
+        <h2>Status</h2>
+        <div class="grid" id="statGrid"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Server control</h2>
+        <div class="actions">
+          <button class="btn primary" data-action="start">Start</button>
+          <button class="btn danger"  data-action="stop">Stop</button>
+          <button class="btn"         data-action="restart">Restart</button>
+          <button class="btn"         data-action="update">Check for updates</button>
+          <button class="btn"         data-action="validate">Validate files</button>
+          <button class="btn"         data-action="backup">Back up now</button>
+        </div>
+        <p class="hint">Start, update and validate download from Steam and can take several minutes.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Mod maintenance</h2>
+        <div class="actions">
+          <button class="btn" data-action="checkmods">Check for mod updates</button>
+          <button class="btn" data-action="workshop">Download / update mods</button>
+          <button class="btn" data-action="updateconfig">Rebuild launch line</button>
+          <button class="btn" data-action="cleancache">Clear SteamCMD cache</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Command output</h2>
+        <pre class="console" id="cmdOutput" style="height:240px">Run a command to see its output here.</pre>
+      </div>
+    </section>
+
+    <!-- Console -->
+    <section class="tab" id="tab-console">
+      <div class="panel">
+        <h2>Server console</h2>
+        <div class="actions" style="margin-bottom:12px">
+          <label class="pill"><input type="checkbox" id="autoScroll" checked style="margin:0 6px 0 0"> Follow output</label>
+          <button class="btn small" id="refreshConsole">Refresh now</button>
+        </div>
+        <pre class="console" id="consoleOut">Loading…</pre>
+        <p class="hint">Reads ~/tmux.log, which is captured while the server runs.</p>
+      </div>
+
+      <div class="panel">
+        <h2>RCon</h2>
+        <div class="row">
+          <input id="rconInput" placeholder="players" autocomplete="off">
+          <button class="btn" id="rconSend">Send</button>
+        </div>
+        <pre class="console" id="rconOut" style="height:200px">Needs bercon-cli and an RCon password in your BattlEye config.</pre>
+      </div>
+    </section>
+
+    <!-- Mods -->
+    <section class="tab" id="tab-mods">
+      <div class="panel">
+        <h2>Add a mod</h2>
+        <div class="row">
+          <input id="modInput" placeholder="Workshop ID or full workshop URL" autocomplete="off">
+          <button class="btn primary" id="modAdd">Add</button>
+        </div>
+        <p class="hint">After adding, run <strong>Download / update mods</strong> then <strong>Rebuild launch line</strong>.</p>
+      </div>
+      <div class="panel">
+        <h2>Configured mods</h2>
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Status</th><th></th></tr></thead>
+          <tbody id="modTable"><tr><td colspan="4">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Config -->
+    <section class="tab" id="tab-config">
+      <div class="panel">
+        <h2>Configuration files</h2>
+        <div class="row">
+          <select id="configFile">
+            <option value="config.ini">config.ini — manager settings</option>
+            <option value="serverDZ.cfg">serverDZ.cfg — server settings</option>
+            <option value="workshop.cfg">workshop.cfg — mod list</option>
+          </select>
+          <button class="btn" id="configReload">Reload</button>
+          <button class="btn primary" id="configSave">Save</button>
+        </div>
+        <div class="warn-banner" id="configWarn">
+          Secrets are shown as ******** and cannot be changed here. Edit them with
+          <code>./dayzserver.sh setup</code>. A timestamped backup is written before every save.
+        </div>
+        <textarea class="editor" id="configText" spellcheck="false"></textarea>
+      </div>
+    </section>
+
+    <!-- Logs -->
+    <section class="tab" id="tab-logs">
+      <div class="panel">
+        <h2>Logs</h2>
+        <div class="row">
+          <select id="logSelect">
+            <option value="monitor">monitor.log — starts, crashes, restarts</option>
+            <option value="rpt">Latest server .RPT</option>
+            <option value="web">dayzweb.log — this web GUI</option>
+          </select>
+          <button class="btn" id="logReload">Reload</button>
+        </div>
+        <pre class="console" id="logOut">Loading…</pre>
+      </div>
+    </section>
+
+    <!-- Backups -->
+    <section class="tab" id="tab-backups">
+      <div class="panel">
+        <h2>Backups</h2>
+        <div class="actions" style="margin-bottom:14px">
+          <button class="btn primary" data-action="backup">Create a backup now</button>
+        </div>
+        <table>
+          <thead><tr><th>Archive</th><th>Size</th><th>Created</th></tr></thead>
+          <tbody id="backupTable"><tr><td colspan="3">Loading…</td></tr></tbody>
+        </table>
+        <p class="hint">Archives live in <code>~/backup</code>. Retention is set by
+          <code>backup_retention_days</code> in config.ini.</p>
+      </div>
+      <div class="panel">
+        <h2>Crash reports</h2>
+        <table>
+          <thead><tr><th>When</th><th>Captured files</th></tr></thead>
+          <tbody id="crashTable"><tr><td colspan="2">Loading…</td></tr></tbody>
+        </table>
+        <p class="hint">Written to <code>~/crashlogs</code> whenever the monitor finds a dead server.</p>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="tab" id="tab-settings">
+      <div class="panel">
+        <h2>Change the GUI password</h2>
+        <div class="row"><input type="password" id="pwCurrent" placeholder="Current password" autocomplete="current-password"></div>
+        <div class="row"><input type="password" id="pwNew" placeholder="New password (at least 8 characters)" autocomplete="new-password"></div>
+        <div class="actions"><button class="btn primary" id="pwSave">Update password</button></div>
+      </div>
+      <div class="panel">
+        <h2>About</h2>
+        <p class="hint" id="aboutText">DayZ Server Manager for Linux.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+let csrf = "";
+let busy = false;
+let consoleTimer = null;
+let statusTimer = null;
+
+const $  = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+function toast(message, kind) {
+  const el = document.createElement("div");
+  el.className = "toast " + (kind || "");
+  el.textContent = message;
+  $("#toast").appendChild(el);
+  setTimeout(() => el.remove(), 5200);
+}
+
+async function api(path, options) {
+  const opts = Object.assign({ headers: {} }, options || {});
+  if (opts.body) {
+    opts.headers["Content-Type"] = "application/json";
+    opts.headers["X-CSRF-Token"] = csrf;
+  }
+  const res = await fetch(path, opts);
+  if (res.status === 401) { showLogin(); throw new Error("Session expired"); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || ("Request failed: " + res.status));
+  return data;
+}
+
+/* --- auth ------------------------------------------------------------- */
+
+function showLogin() {
+  $("#app").classList.add("hidden");
+  $("#login").style.display = "flex";
+  clearInterval(consoleTimer); clearInterval(statusTimer);
+}
+
+function showApp() {
+  $("#login").style.display = "none";
+  $("#app").classList.remove("hidden");
+  refreshStatus();
+  statusTimer = setInterval(refreshStatus, 5000);
+}
+
+$("#loginForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  $("#loginError").textContent = "";
+  try {
+    const data = await api("/api/login", {
+      method: "POST",
+      body: JSON.stringify({ password: $("#password").value }),
+    });
+    csrf = data.csrf;
+    $("#password").value = "";
+    showApp();
+  } catch (err) {
+    $("#loginError").textContent = err.message;
+  }
+});
+
+$("#logoutBtn").addEventListener("click", async () => {
+  try { await api("/api/logout", { method: "POST", body: JSON.stringify({}) }); } catch (e) {}
+  csrf = "";
+  showLogin();
+});
+
+/* --- tabs ------------------------------------------------------------- */
+
+$$("nav button").forEach((button) => {
+  button.addEventListener("click", () => {
+    $$("nav button").forEach((b) => b.classList.remove("active"));
+    $$(".tab").forEach((t) => t.classList.remove("active"));
+    button.classList.add("active");
+    $("#tab-" + button.dataset.tab).classList.add("active");
+    onTabShown(button.dataset.tab);
+  });
+});
+
+function onTabShown(tab) {
+  clearInterval(consoleTimer);
+  if (tab === "console") {
+    refreshConsole();
+    consoleTimer = setInterval(refreshConsole, 3000);
+  } else if (tab === "mods")    { refreshMods(); }
+  else if (tab === "config")    { loadConfig(); }
+  else if (tab === "logs")      { loadLog(); }
+  else if (tab === "backups")   { refreshBackups(); }
+}
+
+/* --- dashboard -------------------------------------------------------- */
+
+function humanUptime(seconds) {
+  if (!seconds || seconds < 0) return "—";
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d) return d + "d " + h + "h";
+  if (h) return h + "h " + m + "m";
+  return m + "m";
+}
+
+async function refreshStatus() {
+  let status;
+  try { status = await api("/api/status"); }
+  catch (err) { return; }
+
+  const running = status.running === true;
+  $("#statusDot").className = "dot " + (running ? "on" : "off");
+  $("#statusText").textContent = running ? "Running" : "Stopped";
+
+  const pill = $("#playerPill");
+  if (running && status.players !== null && status.players !== undefined) {
+    pill.style.display = "";
+    $("#playerText").textContent = status.players + (status.players === 1 ? " player" : " players");
+  } else {
+    pill.style.display = "none";
+  }
+
+  const stats = [
+    ["State",    running ? "Running" : "Stopped"],
+    ["Uptime",   running ? humanUptime(status.uptime_seconds) : "—"],
+    ["Players",  (status.players === null || status.players === undefined) ? "—" : String(status.players)],
+    ["Build",    status.build || "unknown"],
+    ["Mods",     status.mod_count === undefined ? "—" : String(status.mod_count)],
+    ["Game port", status.port === undefined ? "—" : String(status.port)],
+    ["Updates",  status.update_pending ? "Pending" : "Up to date"],
+  ];
+  if (!running && status.last_exit_code) stats.push(["Last exit code", status.last_exit_code]);
+
+  $("#statGrid").innerHTML = stats.map(([label, value]) =>
+    '<div class="stat"><div class="label">' + esc(label) +
+    '</div><div class="value">' + esc(value) + "</div></div>").join("");
+
+  $("#aboutText").textContent =
+    "DayZ Server Manager for Linux v" + (status.version || "?") + " — web GUI.";
+}
+
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function setBusy(state) {
+  busy = state;
+  $$("[data-action]").forEach((b) => { b.disabled = state; });
+}
+
+$$("[data-action]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    if (busy) return;
+    const action = button.dataset.action;
+    if (action === "stop" && !confirm("Stop the server? Connected players will be disconnected.")) return;
+
+    setBusy(true);
+    $("#cmdOutput").textContent = "Running " + action + "…\n";
+    try {
+      const result = await api("/api/control", {
+        method: "POST",
+        body: JSON.stringify({ action: action }),
+      });
+      $("#cmdOutput").textContent = result.output || "(no output)";
+      $("#cmdOutput").scrollTop = $("#cmdOutput").scrollHeight;
+      toast(result.ok ? action + " finished" : action + " failed (exit " + result.code + ")",
+            result.ok ? "ok" : "err");
+      refreshStatus();
+      if (action === "workshop" || action === "checkmods") refreshMods();
+      if (action === "backup") refreshBackups();
+    } catch (err) {
+      $("#cmdOutput").textContent = err.message;
+      toast(err.message, "err");
+    } finally {
+      setBusy(false);
+    }
+  });
+});
+
+/* --- console ---------------------------------------------------------- */
+
+async function refreshConsole() {
+  try {
+    const data = await api("/api/console");
+    const pre = $("#consoleOut");
+    const atBottom = $("#autoScroll").checked;
+    pre.textContent = data.content || "The console log is empty. It fills up while the server runs.";
+    if (atBottom) pre.scrollTop = pre.scrollHeight;
+  } catch (err) { /* a transient failure should not spam the UI */ }
+}
+$("#refreshConsole").addEventListener("click", refreshConsole);
+
+$("#rconSend").addEventListener("click", async () => {
+  const command = $("#rconInput").value.trim();
+  if (!command) return;
+  $("#rconOut").textContent = "Sending…";
+  try {
+    const result = await api("/api/rcon", {
+      method: "POST", body: JSON.stringify({ command: command }),
+    });
+    $("#rconOut").textContent = result.output || "(no output)";
+  } catch (err) {
+    $("#rconOut").textContent = err.message;
+  }
+});
+$("#rconInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#rconSend").click(); });
+
+/* --- mods ------------------------------------------------------------- */
+
+function renderMods(mods) {
+  if (!mods.length) {
+    $("#modTable").innerHTML = '<tr><td colspan="4">No mods configured yet.</td></tr>';
+    return;
+  }
+  $("#modTable").innerHTML = mods.map((mod) => {
+    let tag;
+    if (mod.linked)          tag = '<span class="tag ok">installed</span>';
+    else if (mod.downloaded) tag = '<span class="tag warn">downloaded, not linked</span>';
+    else                     tag = '<span class="tag bad">not downloaded</span>';
+    return "<tr>" +
+      '<td class="mono"><a href="' + esc(mod.url) + '" target="_blank" rel="noopener">' + esc(mod.id) + "</a></td>" +
+      "<td>" + esc(mod.name || "—") + (mod.link ? ' <span style="color:var(--muted)" class="mono">' + esc(mod.link) + "</span>" : "") + "</td>" +
+      "<td>" + tag + "</td>" +
+      '<td style="text-align:right"><button class="btn small danger" data-remove="' + esc(mod.id) + '">Remove</button></td>' +
+      "</tr>";
+  }).join("");
+
+  $$("[data-remove]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!confirm("Remove mod " + button.dataset.remove + " from workshop.cfg?")) return;
+      try {
+        const result = await api("/api/mods", {
+          method: "POST",
+          body: JSON.stringify({ action: "remove", value: button.dataset.remove }),
+        });
+        renderMods(result.mods || []);
+        toast("Mod removed. Rebuild the launch line next.", "ok");
+      } catch (err) { toast(err.message, "err"); }
+    });
+  });
+}
+
+async function refreshMods() {
+  try { renderMods((await api("/api/mods")).mods || []); }
+  catch (err) { $("#modTable").innerHTML = '<tr><td colspan="4">' + esc(err.message) + "</td></tr>"; }
+}
+
+$("#modAdd").addEventListener("click", async () => {
+  const value = $("#modInput").value.trim();
+  if (!value) return;
+  try {
+    const result = await api("/api/mods", {
+      method: "POST", body: JSON.stringify({ action: "add", value: value }),
+    });
+    $("#modInput").value = "";
+    renderMods(result.mods || []);
+    toast("Mod added to workshop.cfg", "ok");
+  } catch (err) { toast(err.message, "err"); }
+});
+$("#modInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#modAdd").click(); });
+
+/* --- config ----------------------------------------------------------- */
+
+async function loadConfig() {
+  const file = $("#configFile").value;
+  $("#configWarn").classList.toggle("hidden", file !== "config.ini");
+  $("#configText").value = "Loading…";
+  try {
+    const data = await api("/api/config?file=" + encodeURIComponent(file));
+    $("#configText").value = data.content ||
+      (data.exists ? "" : "# " + file + " does not exist yet. Saving will create it.");
+  } catch (err) {
+    $("#configText").value = err.message;
+  }
+}
+$("#configFile").addEventListener("change", loadConfig);
+$("#configReload").addEventListener("click", loadConfig);
+
+$("#configSave").addEventListener("click", async () => {
+  const file = $("#configFile").value;
+  try {
+    await api("/api/config", {
+      method: "POST",
+      body: JSON.stringify({ file: file, content: $("#configText").value }),
+    });
+    toast(file + " saved. Restart the server to apply it.", "ok");
+  } catch (err) { toast(err.message, "err"); }
+});
+
+/* --- logs ------------------------------------------------------------- */
+
+async function loadLog() {
+  $("#logOut").textContent = "Loading…";
+  try {
+    const data = await api("/api/logs?which=" + encodeURIComponent($("#logSelect").value));
+    $("#logOut").textContent = data.content || "(empty)";
+    $("#logOut").scrollTop = $("#logOut").scrollHeight;
+  } catch (err) { $("#logOut").textContent = err.message; }
+}
+$("#logSelect").addEventListener("change", loadLog);
+$("#logReload").addEventListener("click", loadLog);
+
+/* --- backups ---------------------------------------------------------- */
+
+function humanSize(bytes) {
+  const units = ["B", "KB", "MB", "GB"];
+  let i = 0, size = bytes;
+  while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
+  return size.toFixed(i ? 1 : 0) + " " + units[i];
+}
+
+async function refreshBackups() {
+  try {
+    const data = await api("/api/backups");
+    $("#backupTable").innerHTML = (data.backups || []).length
+      ? data.backups.map((b) =>
+          '<tr><td class="mono">' + esc(b.name) + "</td><td>" + humanSize(b.size) +
+          "</td><td>" + esc(b.modified) + "</td></tr>").join("")
+      : '<tr><td colspan="3">No backups yet.</td></tr>';
+
+    $("#crashTable").innerHTML = (data.crashlogs || []).length
+      ? data.crashlogs.map((c) =>
+          '<tr><td class="mono">' + esc(c.name) + '</td><td class="mono">' +
+          esc((c.files || []).join(", ")) + "</td></tr>").join("")
+      : '<tr><td colspan="2">No crashes recorded. Good.</td></tr>';
+  } catch (err) { toast(err.message, "err"); }
+}
+
+/* --- settings --------------------------------------------------------- */
+
+$("#pwSave").addEventListener("click", async () => {
+  try {
+    await api("/api/password", {
+      method: "POST",
+      body: JSON.stringify({ current: $("#pwCurrent").value, new: $("#pwNew").value }),
+    });
+    $("#pwCurrent").value = ""; $("#pwNew").value = "";
+    toast("Password updated.", "ok");
+  } catch (err) { toast(err.message, "err"); }
+});
+
+/* --- boot ------------------------------------------------------------- */
+
+(async function init() {
+  try {
+    const data = await api("/api/session");
+    if (data.authenticated) { csrf = data.csrf; showApp(); }
+    else showLogin();
+  } catch (err) { showLogin(); }
+})();
+</script>
+</body>
+</html>

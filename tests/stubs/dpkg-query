@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test stub: reports every queried package as installed, so the harness does
+# not need real 32-bit libraries present to exercise the script.
+echo "install ok installed"
+exit 0
