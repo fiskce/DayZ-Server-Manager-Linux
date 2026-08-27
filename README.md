@@ -11,6 +11,10 @@ optional web GUI gives you all of it in a browser.
 curl -fsSL https://raw.githubusercontent.com/fiskce/DayZ-Server-Manager-Linux/main/install.sh | bash
 ```
 
+[![The web GUI dashboard](docs/images/dashboard.png)](#web-gui)
+
+<sup>The optional web GUI — [more screenshots below](#web-gui).</sup>
+
 ---
 
 ## What it does
@@ -159,8 +163,37 @@ Set `discord_webhook_url` in `config.ini` to be told when a mod changes.
 ./dayzserver.sh web start
 ```
 
-A password is generated and printed **once** on first run; only its
-PBKDF2 hash is stored.
+Live status, player count and one-click controls. Every button runs the same
+`dayzserver.sh` command you would type yourself, so the CLI and the GUI can
+never disagree about what your server is doing.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/console.png" alt="Server console and RCon"></td>
+<td width="50%"><img src="docs/images/mods.png" alt="Mod manager"></td>
+</tr>
+<tr>
+<td><b>Console</b> — live server output, with an RCon box underneath.</td>
+<td><b>Mods</b> — add by ID or workshop URL; see what is downloaded and linked.</td>
+</tr>
+<tr>
+<td><img src="docs/images/config.png" alt="Config editor"></td>
+<td><img src="docs/images/logs.png" alt="Log viewer"></td>
+</tr>
+<tr>
+<td><b>Config</b> — edit all three config files, with secrets redacted.</td>
+<td><b>Logs</b> — monitor history, the latest RPT, and the GUI's own log.</td>
+</tr>
+</table>
+
+Backups and crash reports get their own tab:
+
+![Backups and crash reports](docs/images/backups.png)
+
+### Reaching it safely
+
+A password is generated and printed **once** on first run; only its PBKDF2 hash
+is stored.
 
 The GUI can start, stop and wipe your server, so it **binds `127.0.0.1` by
 default**. Reach it from your desktop over an SSH tunnel:
@@ -170,16 +203,16 @@ ssh -L 8080:127.0.0.1:8080 dayz@your-server
 # then open http://127.0.0.1:8080
 ```
 
+<img src="docs/images/login.png" alt="Login screen" width="420">
+
 To expose it on your network instead, set `web_bind=0.0.0.0` in `config.ini` —
 and put it behind a reverse proxy with HTTPS. Plain HTTP over a network means
 your password crosses it in the clear.
 
-Tabs: dashboard with live status and one-click controls, server console with an
-RCon box, mod manager, config editor for all three config files, log viewer, and
-backups and crash reports.
-
 Your Steam login, Discord webhook and password hash are replaced with
 placeholders before `config.ini` is ever sent to the browser.
+
+> Screenshots are from a demo instance with simulated server data.
 
 ---
 
